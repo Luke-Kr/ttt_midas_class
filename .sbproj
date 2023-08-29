@@ -1,0 +1,32 @@
+{
+  "Title": "TTT Midas Class",
+  "Type": "addon",
+  "Org": "smartmario",
+  "Ident": "ttt_midas_class",
+  "Tags": null,
+  "Schema": 1,
+  "HasAssets": true,
+  "AssetsPath": "",
+  "Resources": null,
+  "MenuResources": null,
+  "HasCode": true,
+  "CodePath": "/code/",
+  "PackageReferences": [
+    "thieves.terrortown",
+    "smartmario.classes_manager_ttt",
+    "shadb.king_hair_crown",
+    "shadb.king_coat",
+    "shadb.king_leggings",
+    "shadb.king_shoes"
+  ],
+  "EditorReferences": null,
+  "Metadata": {
+    "CsProjName": "",
+    "PrimaryAsset": "",
+    "PhysicsMins": "-1,-1,-1",
+    "PhysicsMaxs": "1,1,1",
+    "RenderMins": "-1,-1,-1",
+    "RenderMaxs": "-1,-1,-1",
+    "ParentPackage": "thieves.terrortown"
+  }
+}

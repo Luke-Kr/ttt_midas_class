@@ -1,0 +1,13 @@
+{
+  "Decals": [
+    {
+      "Material": "materials/footstep.vmat",
+      "Width": "15.00,5.00,0",
+      "Height": "15.00,5.00,0",
+      "Depth": "3.00,3.00,0",
+      "Rotation": "180.00,360.00,0",
+      "FadeTime": "30.00,30.00,0",
+      "FadeDuration": "1.00,1.00,0"
+    }
+  ]
+}

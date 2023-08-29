@@ -1,0 +1,27 @@
+// THIS FILE IS AUTO-GENERATED
+
+Layer0
+{
+	shader "shaders/projected_decals.shader"
+
+	//---- Specular ----
+	F_SPECULAR 1
+
+	//---- Ambient Occlusion ----
+	TextureAmbientOcclusion "materials/default/default_ao.tga"
+
+	//---- Color ----
+	TextureColor "materials/gold_color.png"
+
+	//---- Fog ----
+	g_bFogEnabled "1"
+
+	//---- Lighting ----
+	g_flGlossiness "0.500"
+
+	//---- Metalness ----
+	TextureMetalness "[1.000000 1.000000 1.000000 0.000000]"
+
+	//---- Translucent ----
+	TextureTranslucency "materials/default/default_trans.tga"
+}
