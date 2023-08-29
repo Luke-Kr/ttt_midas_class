@@ -63,7 +63,6 @@ namespace TTT_Classes
             {
                 if (ply.Inventory.ActiveChild is Carriable carriable)
                 {
-                    Log.Info(carriable.ViewModelEntity);
                     carriable.ViewModelEntity?.SetMaterialOverride(GoldMaterial);
                 }
             }
@@ -96,7 +95,6 @@ namespace TTT_Classes
             if (ply != Game.LocalPawn) return;
             if (ply.Inventory.ActiveChild is Carriable carriable)
             {
-                Log.Info(carriable.ViewModelEntity);
                 carriable.ViewModelEntity?.ClearMaterialOverride();
             }
         }
@@ -107,18 +105,14 @@ namespace TTT_Classes
         public override string Description { get; set; } = "A blessing or a curse? Everything you touch turns into gold.";
         public override float Frequency { get; set; } = 1f;
         public override Color Color { get; set; } = Color.FromRgb(0xFFD700);
-        private DecalDefinition LeftDecalDefinition { get; set; }
-        private DecalDefinition RightDecalDefinition { get; set; }
-        private RealTimeSince LastFootstep { get; set; } = 0;
-        private bool RightStepLast { get; set; } = false;
-        private Vector3 LastPostion { get; set; }
 
         public override void RoundStartAbility()
         {
-            LastPostion = Entity.Position;
-            LeftDecalDefinition = GlobalGameNamespace.ResourceLibrary.Get<DecalDefinition>("decals/footstep_left.decal");
-            RightDecalDefinition = GlobalGameNamespace.ResourceLibrary.Get<DecalDefinition>("decals/footstep_right.decal");
-            Log.Info(Entity.Clothing.Clothing.Count);
+            FootprintComponent footprints =  Entity.Components.GetOrCreate<FootprintComponent>().Init();
+            footprints.LastPostion = Entity.Position;
+            footprints.FootprintColor = Color.White;
+            footprints.LeftDecalDefinition = GlobalGameNamespace.ResourceLibrary.Get<DecalDefinition>("decals/footstep_left.decal");
+            footprints.RightDecalDefinition = GlobalGameNamespace.ResourceLibrary.Get<DecalDefinition>("decals/footstep_right.decal");
             DrawClothes(Entity);
         }
 
@@ -212,24 +206,6 @@ namespace TTT_Classes
             };
 
             return clothingList;
-        }
-
-        [GameEvent.Tick.Server]
-        public void TickServer()
-        {
-            if (LastFootstep > 0.2 && Entity.Position != LastPostion) {
-                LastPostion = Entity.Position;
-                Trace trace = Trace.Ray(Entity.Position + Vector3.Up, Entity.Position + Vector3.Down);
-                TraceResult tr = trace.StaticOnly().Run();
-                if (tr.Hit)
-                {
-                    Rotation r = Rotation.LookAt(Vector3.Up);
-                    r *= Rotation.FromAxis(Vector3.Forward, Entity.Rotation.Yaw());
-                    Decal.Place(RightStepLast ? LeftDecalDefinition : RightDecalDefinition, tr.EndPosition, r);
-                    RightStepLast = !RightStepLast;
-                    LastFootstep = 0;
-                }
-            }
         }
 
         [Event("Player.StartTouch")]
