@@ -1,13 +1,13 @@
 ﻿using Sandbox;
 using Sandbox.Internal;
 using System.Collections.Generic;
+using System.Linq;
 using TerrorTown;
 
 namespace TTT_Classes
 {
     public partial class GoldComponent : EntityComponent<ModelEntity>
     {
-        public bool TimerActive { get; set; } = false;
         public RealTimeUntil Timer { get; set; } = 5;
         public Material GoldMaterial { get; set; }
         public float? OriginalSpeed { get; set; } = null;
@@ -17,10 +17,14 @@ namespace TTT_Classes
         }
         public void Init()
         {
-            if (Entity is TerrorTown.Player ply && ply.MovementController is TerrorTown.WalkController walker && OriginalSpeed == null)
+            if (Entity is TerrorTown.Player ply)
             {
-                OriginalSpeed = walker.SpeedMultiplier;
-                walker.SpeedMultiplier = 0.15f;
+                SetGoldenLegs();
+                if (ply.MovementController is TerrorTown.WalkController walker && OriginalSpeed == null)
+                {
+                    OriginalSpeed = walker.SpeedMultiplier;
+                    walker.SpeedMultiplier = 0.15f;
+                } 
             }
             Entity.SetMaterialOverride(GoldMaterial);
             foreach (Entity child in Entity.Children)
@@ -30,10 +34,10 @@ namespace TTT_Classes
                     modelChild.SetMaterialOverride(GoldMaterial);
                 }
             }
-            ResetTimer(active: false);
+            ResetTimer();
         }
 
-        public void ResetTimer(int time = 5, bool active = true)
+        public void ResetTimer(int time = 5)
         {
             if (Entity is TerrorTown.Player)
             {
@@ -42,14 +46,13 @@ namespace TTT_Classes
             {
                 Timer = 30;
             }
-            TimerActive = active;
         }
 
         [GameEvent.Tick.Server]
         public void TickServer()
         {
             Game.AssertServer();
-            if (Timer && TimerActive) 
+            if (Timer)
             {
                 RemoveGold();
             }
@@ -90,12 +93,33 @@ namespace TTT_Classes
         }
 
         [ClientRpc]
+        public void SetGoldenLegs()
+        {
+            if (Entity != Game.LocalPawn) return;
+            TerrorTown.Player ply = Entity as TerrorTown.Player;
+            foreach (Entity child in new List<Entity>(ply.PlayerLegs.Children))
+            {
+                if (child is ModelEntity modelChild)
+                {
+                    modelChild.SetMaterialOverride(GoldMaterial);
+                }
+            }
+        }
+
+        [ClientRpc]
         public static void ResetViewModel(TerrorTown.Player ply)
         {
             if (ply != Game.LocalPawn) return;
             if (ply.Inventory.ActiveChild is Carriable carriable)
             {
                 carriable.ViewModelEntity?.ClearMaterialOverride();
+            }
+            foreach (Entity child in new List<Entity>(ply.PlayerLegs.Children))
+            {
+                if (child is ModelEntity modelChild)
+                {
+                    modelChild.ClearMaterialOverride();
+                }
             }
         }
     }
@@ -208,24 +232,25 @@ namespace TTT_Classes
             return clothingList;
         }
 
-        [Event("Player.StartTouch")]
-        public void StartTouch(Entity other, TerrorTown.Player ply)
+        [GameEvent.Tick.Server]
+        public void TickServer()
         {
-            if (ply != Entity) return; 
-            if (other is ModelEntity model)
+            foreach (Entity item in Sandbox.Entity.FindInSphere(Entity.Position + Entity.EyeLocalPosition / 2, 50f * Entity.LocalScale))
             {
-                model.Components.GetOrCreate<GoldComponent>().Init();
-            }
-        }
-
-        [Event("Player.EndTouch")]
-        public void EndTouch(Entity other, TerrorTown.Player ply)
-        {
-            if (ply != Entity) return;
-            if (other is ModelEntity model)
-            {
-                model.Components.TryGet(out GoldComponent component);
-                component?.ResetTimer();
+                if (item == Entity) continue;
+                if (item is ModelEntity other) {
+                    GoldComponent gold = other.Components.Get<GoldComponent>();
+                    if (gold == null)
+                    {
+                        gold = new GoldComponent();
+                        other.Components.Add(gold);
+                        gold.Init();
+                    } 
+                    else
+                    {
+                        gold.ResetTimer();
+                    }
+                }
             }
         }
 
