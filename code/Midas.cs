@@ -8,9 +8,10 @@ namespace TTT_Classes
 {
     public partial class GoldComponent : EntityComponent<ModelEntity>
     {
-        public RealTimeUntil Timer { get; set; } = 5;
+        public RealTimeSince Timer { get; set; } = 0;
         public Material GoldMaterial { get; set; }
         public float? OriginalSpeed { get; set; } = null;
+        private bool IsGold = true;
         public GoldComponent() 
         {
             GoldMaterial = Material.Load("materials/complex_gold.vmat");
@@ -37,41 +38,54 @@ namespace TTT_Classes
             ResetTimer();
         }
 
-        public void ResetTimer(int time = 5)
+        public void ResetTimer()
         {
-            if (Entity is TerrorTown.Player)
+            if (Entity is not TerrorTown.Player)
             {
-                Timer = time;
-            } else
-            {
-                Timer = 30;
+                Timer = 0;
             }
         }
 
         [GameEvent.Tick.Server]
         public void TickServer()
         {
+            Log.Info(Timer);
             Game.AssertServer();
-            if (Timer)
+            if (Entity is TerrorTown.Player ply)
+            {
+                if (Timer > 5 && IsGold)
+                {
+                    RemoveGold(true);
+                    IsGold = false;
+                }
+                else if (IsGold)
+                {
+                    SetWeaponGold(ply);
+                }
+                if (Timer > 10)
+                {
+                    RemoveGold();
+                }
+            }
+
+            if (Timer > 30)
             {
                 RemoveGold();
             }
             
         }
 
-        [GameEvent.Tick.Client]
-        public void TickClient()
+        [ClientRpc]
+        public void SetWeaponGold(TerrorTown.Player ply)
         {
-            if (Entity is TerrorTown.Player ply)
+            if (ply != Game.LocalPawn) return;
+            if (ply.Inventory.ActiveChild is Carriable carriable)
             {
-                if (ply.Inventory.ActiveChild is Carriable carriable)
-                {
-                    carriable.ViewModelEntity?.SetMaterialOverride(GoldMaterial);
-                }
+                carriable.ViewModelEntity?.SetMaterialOverride(GoldMaterial);
             }
         }
 
-        public void RemoveGold()
+        public void RemoveGold(bool onlyDebuff = false)
         {
             Entity.ClearMaterialOverride();
             foreach (Entity child in Entity.Children)
@@ -81,7 +95,7 @@ namespace TTT_Classes
                     modelChild.ClearMaterialOverride();
                 }
             }
-            if (Entity is TerrorTown.Player ply)
+            if (Entity is TerrorTown.Player ply && IsGold)
             {
                 ResetViewModel(ply);
                 if (ply.MovementController is TerrorTown.WalkController walker)
@@ -89,7 +103,10 @@ namespace TTT_Classes
                     walker.SpeedMultiplier += (float) OriginalSpeed - 0.15f;
                 }
             }
-            Entity.Components.Remove(this);
+            if (!onlyDebuff)
+            {
+                Entity.Components.Remove(this);
+            }
         }
 
         [ClientRpc]
